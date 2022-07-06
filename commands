@@ -1,0 +1,21 @@
+openssl genrsa -aes256 -out ca.key 4096
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 1826 -out ca.crt -subj '/CN=RootCA'
+
+
+echo "subjectAltName = DNS:localhost, DNS:127.0.0.1, IP: 127.0.0.1" > sans.ext
+
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -days 365 -out server.csr -subj '/CN=localhost'
+openssl x509  -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256 -extfile sans.ext
+
+
+openssl genrsa -out client.key 2048
+openssl req -new -key client.key -days 365 -out client.csr -subj '/CN=localhost'
+openssl x509  -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365 -sha256 -extfile sans.ext
+
+#TLS
+curl https://localhost:9090 --cacert cert/ca.crt
+curl https://localhost:9090 --insecure
+
+#MTLS
+curl https://localhost:9090 --cacert cert/ca.crt --cert cert/client.crt --key cert/client.key
