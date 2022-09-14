@@ -1,6 +1,5 @@
-openssl genrsa -aes256 -out ca.key 4096
+openssl genrsa -out ca.key 4096
 openssl req -x509 -new -nodes -key ca.key -sha256 -days 1826 -out ca.crt -subj '/CN=RootCA'
-
 
 echo "subjectAltName = DNS:localhost, DNS:127.0.0.1, IP: 127.0.0.1" > sans.ext
 
@@ -19,3 +18,19 @@ curl https://localhost:9090 --insecure
 
 #MTLS
 curl https://localhost:9090 --cacert cert/ca.crt --cert cert/client.crt --key cert/client.key
+
+
+----
+# SelfSigned cert with SAN
+openssl genrsa -out cert.key 2048
+echo "subjectAltName = DNS:localhost, DNS:127.0.0.1, IP: 127.0.0.1" > sans.ext
+openssl req -new -key cert.key -days 365 -out cert.csr -subj '/CN=localhost'
+openssl x509 -req -in cert.csr -signkey cert.key -CAcreateserial -out cert.crt -days 365 -sha256 -extfile sans.ext
+
+curl https://localhost:9090 --cacert selfSignedCerts/cert.crt --cert selfSignedCerts/cert.crt --key selfSignedCerts/cert.key
+
+
+# SelfSigned cert THIS DOES NOT WORK
+# 2022/09/14 23:01:27 error making get request: Get "https://localhost:9090": x509: certificate is not valid for any names, but wanted to match localhost
+openssl genrsa -out cert.key 4096
+openssl req -x509 -new -nodes -key cert.key -sha256 -days 1826 -out cert.crt -subj '/CN=RootCA'
